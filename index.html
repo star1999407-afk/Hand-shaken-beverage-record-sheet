@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手搖成癮患者臨床診斷系統 - Clinical Case Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #FDFCF8;
+            background-image: linear-gradient(#E0D8C8 1px, transparent 1px);
+            background-size: 100% 28px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+        
+        @keyframes snowfall-advanced {
+            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            50% { transform: translateY(50vh) translateX(var(--drift)) rotate(180deg); opacity: 1; }
+            100% { transform: translateY(110vh) translateX(calc(var(--drift) * 1.5)) rotate(var(--rot)); opacity: 0; }
+        }
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 100;
+            animation: snowfall-advanced linear forwards;
+        }
+
+        .active-tab { color: white !important; }
+        .active-tab i { transform: scale(1.1); stroke-width: 3; }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 0;
+            width: 100%;
+            position: absolute;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 pb-32">
+
+    <div id="app" class="max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="mb-6 text-center pt-4">
+            <span class="text-[10px] font-black text-[#6D4C41] tracking-[0.3em] uppercase mb-1 block opacity-70 italic">Clinical Case Report</span>
+            <div class="relative inline-block px-8 py-3 bg-white border-2 border-[#4E342E] rounded-2xl shadow-[4px_4px_0px_#D7CCC8] -rotate-1">
+                <h1 class="text-3xl font-bold text-[#3E2723]">手搖成癮患者🥤</h1>
+                <div class="absolute -top-3 -right-3 text-amber-500 rotate-12"><i data-lucide="sparkles"></i></div>
+            </div>
+            <p class="mt-3 text-[9px] font-mono text-stone-400 uppercase tracking-tighter">GitHub Ready / Local Storage Only</p>
+        </header>
+
+        <!-- Main Content Area -->
+        <div id="tab-content"></div>
+
+        <!-- Navigation -->
+        <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#3E2723] p-2 rounded-[2rem] flex justify-between items-center shadow-2xl z-[110] border border-white/5">
+            <button onclick="switchTab('prescribe')" id="btn-prescribe" class="flex-1 flex flex-col items-center py-2 text-[#A1887F] transition-all">
+                <i data-lucide="pill" size="22"></i>
+                <span class="text-[10px] font-black mt-1 uppercase">診斷 / DX</span>
+            </button>
+            <button onclick="switchTab('calendar')" id="btn-calendar" class="flex-1 flex flex-col items-center py-2 text-[#A1887F] transition-all">
+                <i data-lucide="calendar" size="22"></i>
+                <span class="text-[10px] font-black mt-1 uppercase">日誌 / Log</span>
+            </button>
+            <button onclick="switchTab('history')" id="btn-history" class="flex-1 flex flex-col items-center py-2 text-[#A1887F] transition-all">
+                <i data-lucide="history" size="22"></i>
+                <span class="text-[10px] font-black mt-1 uppercase">紀錄 / RX</span>
+            </button>
+            <button onclick="switchTab('statistics')" id="btn-statistics" class="flex-1 flex flex-col items-center py-2 text-[#A1887F] transition-all">
+                <i data-lucide="bar-chart-3" size="22"></i>
+                <span class="text-[10px] font-black mt-1 uppercase">分析 / Stats</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // 資料狀態
+        let records = JSON.parse(localStorage.getItem('drink_records') || '[]');
+        let activeTab = 'prescribe';
+        let editingIndex = null;
+
+        // 表單臨時狀態
+        let currentIce = '微冰';
+        let currentSugar = '微糖';
+        let currentEco = false;
+        let currentIns = false;
+
+        function initIcons() {
+            lucide.createIcons();
+        }
+
+        function saveRecords() {
+            localStorage.setItem('drink_records', JSON.stringify(records));
+            render();
+        }
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            if (activeTab !== 'prescribe') editingIndex = null; 
+            render();
+        }
+
+        function spawnParticles() {
+            const icons = ['pill', 'sparkles', 'flask-conical', 'cup-soda'];
+            for(let i=0; i<30; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const icon = icons[Math.floor(Math.random() * icons.length)];
+                p.innerHTML = `<i data-lucide="${icon}" style="color: ${['#e11d48', '#f59e0b', '#0d9488'][i%3]}"></i>`;
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.top = '-20px';
+                p.style.setProperty('--drift', (Math.random() - 0.5) * 200 + 'px');
+                p.style.setProperty('--rot', Math.random() * 720 + 'deg');
+                p.style.animationDuration = (Math.random() * 2 + 3) + 's';
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 5000);
+            }
+            initIcons();
+        }
+
+        function getStats() {
+            const now = new Date();
+            const curMonth = now.toISOString().slice(0, 7);
+            const monthly = records.filter(r => r.date.startsWith(curMonth));
+            const shopCounts = {};
+            records.forEach(r => shopCounts[r.shop] = (shopCounts[r.shop] || 0) + 1);
+            const sortedShops = Object.entries(shopCounts).sort((a,b) => b[1]-a[1]);
+
+            return {
+                mDose: monthly.length,
+                mCost: monthly.reduce((acc, r) => acc + (r.insurance ? 0 : parseInt(r.cost || 0)), 0),
+                mEco: monthly.filter(r => r.eco).length,
+                mIns: monthly.filter(r => r.insurance).length,
+                topClinic: sortedShops[0]?.[0] || '尚未看診',
+                yDose: records.length,
+                yCost: records.reduce((acc, r) => acc + (r.insurance ? 0 : parseInt(r.cost || 0)), 0),
+                yWaste: records.filter(r => !r.eco).length, // 年度廢棄物（未用環保杯）
+                yIns: records.filter(r => r.insurance).length, // 年度健保次數
+                allShops: sortedShops
+            };
+        }
+
+        function render() {
+            const content = document.getElementById('tab-content');
+            const stats = getStats();
+            
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active-tab'));
+            document.getElementById(`btn-${activeTab}`).classList.add('active-tab');
+
+            if (activeTab === 'prescribe') {
+                const isEditing = editingIndex !== null;
+                const data = isEditing ? records[editingIndex] : null;
+
+                content.innerHTML = `
+                    <div class="space-y-6 animate-fadeIn">
+                        <section class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            <div class="bg-yellow-200 p-3 rounded-2xl text-center shadow-md border-b-4 border-black/15 flex flex-col justify-center min-h-[90px]">
+                                <p class="text-[9px] font-black uppercase opacity-80 leading-none mb-1">當月劑量<br>Monthly Dose</p>
+                                <span class="text-[13px] font-black text-yellow-950">${stats.mDose}杯</span>
+                            </div>
+                            <div class="bg-pink-200 p-3 rounded-2xl text-center shadow-md border-b-4 border-black/15 flex flex-col justify-center min-h-[90px]">
+                                <p class="text-[9px] font-black uppercase opacity-80 leading-none mb-1">診察費<br>Treatment Fee</p>
+                                <span class="text-[13px] font-black text-pink-950">$${stats.mCost}</span>
+                            </div>
+                            <div class="bg-blue-200 p-3 rounded-2xl text-center shadow-md border-b-4 border-black/15 flex flex-col justify-center min-h-[90px]">
+                                <p class="text-[9px] font-black uppercase opacity-80 leading-none mb-1">健保申報<br>Insurance</p>
+                                <span class="text-[13px] font-black text-blue-950">${stats.mIns}杯</span>
+                            </div>
+                            <div class="bg-emerald-200 p-3 rounded-2xl text-center shadow-md border-b-4 border-black/15 flex flex-col justify-center min-h-[90px]">
+                                <p class="text-[9px] font-black uppercase opacity-80 leading-none mb-1">環保折扣<br>Eco Discount</p>
+                                <span class="text-[13px] font-black text-emerald-950">${stats.mEco}件</span>
+                            </div>
+                            <div class="bg-violet-200 p-3 rounded-2xl text-center shadow-md border-b-4 border-black/15 flex flex-col justify-center min-h-[90px] col-span-2 md:col-span-1">
+                                <p class="text-[9px] font-black uppercase opacity-80 leading-none mb-1">最愛診所<br>Top Clinic</p>
+                                <span class="text-[13px] font-black text-violet-950 truncate px-1">${stats.topClinic}</span>
+                            </div>
+                        </section>
+
+                        <section class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border ${isEditing ? 'border-amber-400' : 'border-teal-300'}">
+                            <div class="${isEditing ? 'bg-amber-600' : 'bg-[#004D40]'} p-5 text-white flex justify-between items-center relative shadow-lg">
+                                <div class="flex flex-col">
+                                    <p class="text-[11px] font-black opacity-60 tracking-widest mb-1 uppercase">${isEditing ? '修改病例 / Update Record' : '臨床病例表 / Prescription Form'}</p>
+                                    <div class="flex items-center gap-2">
+                                        <input type="date" id="input-date" value="${data ? data.date : new Date().toISOString().split('T')[0]}" class="bg-white/10 px-2 py-0.5 rounded-lg font-bold text-xl outline-none text-white border-none cursor-pointer" />
+                                        <i data-lucide="clock" size="18"></i>
+                                    </div>
+                                </div>
+                                <i data-lucide="${isEditing ? 'edit' : 'cloud'}" class="text-white/80 animate-pulse"></i>
+                            </div>
+                            
+                            <div class="p-7 space-y-7 ${isEditing ? 'bg-amber-50/30' : 'bg-teal-50/20'}">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <p class="text-[11px] font-black text-[#004D40] uppercase">診療所 / Clinic Name</p>
+                                        <input type="text" id="input-shop" value="${data ? data.shop : ''}" placeholder="請輸入店名..." class="w-full bg-white border border-teal-200 p-3.5 rounded-xl font-bold text-[15px] outline-none shadow-sm focus:ring-2 focus:ring-teal-600" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <p class="text-[11px] font-black text-[#004D40] uppercase">藥劑名稱 / Drink Name</p>
+                                        <input type="text" id="input-drink" value="${data ? data.drink : ''}" placeholder="飲品名稱..." class="w-full bg-white border border-teal-200 p-3.5 rounded-xl font-bold text-[15px] outline-none shadow-sm focus:ring-2 focus:ring-teal-600" />
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    <div class="space-y-2">
+                                        <p class="text-[11px] font-black text-[#004D40] uppercase italic">診察費 / Treatment Fee</p>
+                                        <input type="number" id="input-cost" value="${data ? data.cost : ''}" placeholder="NT$" class="w-full bg-white border border-teal-200 p-3.5 rounded-xl font-bold text-[15px] outline-none shadow-sm" />
+                                    </div>
+                                    <div class="md:col-span-2 space-y-3">
+                                        <p class="text-[11px] font-black text-[#004D40] uppercase italic">冰量調配 / Ice Level</p>
+                                        <div class="flex flex-wrap gap-2" id="ice-options">
+                                            ${["去冰", "微冰", "少冰", "全冰", "熱"].map(o => {
+                                                const active = data ? currentIce === o : currentIce === o;
+                                                return `<button onclick="setOption('ice', '${o}')" class="ice-opt px-3.5 py-2 rounded-xl text-[11px] font-black border border-teal-100 ${active ? 'bg-[#00796B] text-white shadow-md' : 'bg-white text-teal-900'}">${o}</button>`;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <p class="text-[11px] font-black text-[#004D40] uppercase italic">糖分藥力 / Sugar Level</p>
+                                    <div class="flex flex-wrap gap-2" id="sugar-options">
+                                        ${["無糖", "一分", "微糖", "半糖", "全糖"].map(o => {
+                                            const active = data ? currentSugar === o : currentSugar === o;
+                                            return `<button onclick="setOption('sugar', '${o}')" class="sugar-opt px-3.5 py-2 rounded-xl text-[11px] font-black border border-orange-100 ${active ? 'bg-[#BF360C] text-white shadow-md' : 'bg-white text-orange-950'}">${o}</button>`;
+                                        }).join('')}
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-5">
+                                    <div class="space-y-3">
+                                        <p class="text-[11px] font-black text-[#004D40] uppercase">環保杯 / Eco-Cup</p>
+                                        <div class="flex gap-2">
+                                            <button onclick="setOption('eco', true)" class="eco-opt flex-1 py-2.5 rounded-xl text-[11px] font-black ${ currentEco ? 'bg-emerald-800 text-white shadow-md' : 'bg-white text-emerald-950 border border-emerald-100'}">有</button>
+                                            <button onclick="setOption('eco', false)" class="eco-opt flex-1 py-2.5 rounded-xl text-[11px] font-black ${ !currentEco ? 'bg-emerald-800 text-white shadow-md' : 'bg-white text-emerald-950 border border-emerald-100'}">無</button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <p class="text-[11px] font-black text-[#004D40] uppercase">健保 / Insurance</p>
+                                        <div class="flex gap-2">
+                                            <button onclick="setOption('ins', true)" class="ins-opt flex-1 py-2.5 rounded-xl text-[11px] font-black ${ currentIns ? 'bg-blue-800 text-white shadow-md' : 'bg-white text-blue-950 border border-blue-100'}">有</button>
+                                            <button onclick="setOption('ins', false)" class="ins-opt flex-1 py-2.5 rounded-xl text-[11px] font-black ${ !currentIns ? 'bg-blue-800 text-white shadow-md' : 'bg-white text-blue-950 border border-blue-100'}">無</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-3">
+                                    ${isEditing ? `<button onclick="cancelEdit()" class="flex-1 bg-stone-200 text-stone-600 py-4.5 rounded-2xl font-black text-xl border-b-4 border-stone-300 p-4">取消</button>` : ''}
+                                    <button onclick="saveCurrentRecord()" class="flex-[2] ${isEditing ? 'bg-amber-600' : 'bg-[#3E2723]'} text-white py-4.5 rounded-2xl font-black text-xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 border-b-4 border-black/30 p-4">
+                                        <i data-lucide="check"></i> ${isEditing ? '更新診斷 / Update' : '確認處方 / Confirm'}
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                `;
+            } else if (activeTab === 'history') {
+                content.innerHTML = `
+                    <div class="space-y-4 animate-fadeIn">
+                        <h2 class="text-xl font-black text-[#3E2723] px-2 flex items-center gap-2"><i data-lucide="history" class="text-purple-600"></i> 診斷紀錄庫</h2>
+                        ${records.length === 0 ? '<div class="text-center py-20 bg-white rounded-3xl border border-dashed border-stone-300 italic opacity-40">尚未有看診紀錄</div>' : records.slice().reverse().map((r, i) => {
+                            const realIdx = records.length - 1 - i;
+                            return `
+                            <div class="bg-white p-5 rounded-[2rem] border border-stone-300 shadow-sm flex justify-between items-center group hover:border-teal-400 transition-all">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[10px] font-black text-white bg-[#004D40] px-2.5 py-0.5 rounded-md uppercase">${r.date}</span>
+                                        ${r.insurance ? '<span class="bg-blue-100 text-blue-900 text-[10px] px-2 py-0.5 rounded-full font-black tracking-tighter">INSURED</span>' : ''}
+                                        ${r.eco ? '<span class="bg-emerald-100 text-emerald-900 text-[10px] px-2 py-0.5 rounded-full font-black tracking-tighter">ECO</span>' : ''}
+                                    </div>
+                                    <h4 class="font-black text-[#3E2723] text-base">${r.shop}</h4>
+                                    <p class="text-sm font-bold text-stone-500">${r.drink} / ${r.sugar} / ${r.ice}</p>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-xl font-black text-purple-700">${r.insurance ? 'FREE' : '$'+r.cost}</span>
+                                    <button onclick="startEdit(${realIdx})" class="px-4 py-2 bg-[#3E2723] text-white rounded-xl font-black text-sm hover:opacity-90 transition-all">修改</button>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+            } else if (activeTab === 'calendar') {
+                const now = new Date();
+                const curPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+                content.innerHTML = `
+                    <div class="space-y-4 animate-fadeIn">
+                        <h2 class="text-xl font-black text-[#3E2723] px-2 flex items-center gap-2"><i data-lucide="calendar" class="text-orange-600"></i> 看診日誌 / Log</h2>
+                        <div class="bg-white p-6 rounded-[2.5rem] border border-stone-300 shadow-sm">
+                             <div class="flex justify-between items-center mb-6">
+                                <span class="text-2xl font-black text-[#3E2723]">${now.getFullYear()}年 ${now.getMonth()+1}月</span>
+                             </div>
+                             <div class="grid grid-cols-7 gap-2 text-center text-[10px] font-black text-stone-400 mb-4 uppercase">
+                                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                             </div>
+                             <div class="grid grid-cols-7 gap-2">
+                                ${Array.from({length: 31}).map((_, i) => {
+                                    const day = i + 1;
+                                    const dStr = `${curPrefix}-${String(day).padStart(2,'0')}`;
+                                    const count = records.filter(r => r.date === dStr).length;
+                                    let bg = 'bg-white text-stone-200 border-stone-100';
+                                    if(count === 1) bg = 'bg-yellow-100 text-yellow-800 border-yellow-300 shadow-sm';
+                                    if(count > 1) bg = 'bg-orange-600 text-white border-orange-800 shadow-md';
+                                    return `<div class="aspect-square flex flex-col items-center justify-center rounded-xl text-[11px] font-black border transition-all ${bg}">${day}${count > 0 ? `<span class="text-[8px] mt-0.5">${count}劑</span>` : ''}</div>`;
+                                }).join('')}
+                             </div>
+                        </div>
+                    </div>
+                `;
+            } else if (activeTab === 'statistics') {
+                const maxClinicCount = stats.allShops[0]?.[1] || 1;
+                content.innerHTML = `
+                    <div class="space-y-6 animate-fadeIn pb-10">
+                        <h2 class="text-xl font-black text-[#3E2723] px-2 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-orange-600"></i> 年度診斷大數據</h2>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-[#0F172A] p-5 rounded-[2rem] text-center border border-white/10 shadow-xl">
+                                <p class="text-[10px] font-black text-white/50 mb-1 uppercase tracking-widest">年度總劑量 / Dose</p>
+                                <span class="text-2xl font-black text-blue-300">${stats.yDose} <small class="text-xs">杯</small></span>
+                            </div>
+                            <div class="bg-[#2E1065] p-5 rounded-[2rem] text-center border border-white/10 shadow-xl">
+                                <p class="text-[10px] font-black text-white/50 mb-1 uppercase tracking-widest">年度花費 / Fees</p>
+                                <span class="text-2xl font-black text-purple-300">$${stats.yCost}</span>
+                            </div>
+                            <div class="bg-[#450A0A] p-5 rounded-[2rem] text-center border border-white/10 shadow-xl">
+                                <p class="text-[10px] font-black text-white/50 mb-1 uppercase tracking-widest">年度廢棄物 / Waste</p>
+                                <span class="text-2xl font-black text-rose-300">${stats.yWaste} <small class="text-xs">杯</small></span>
+                            </div>
+                            <div class="bg-[#064E3B] p-5 rounded-[2rem] text-center border border-white/10 shadow-xl">
+                                <p class="text-[10px] font-black text-white/50 mb-1 uppercase tracking-widest">健保申報 / Claims</p>
+                                <span class="text-2xl font-black text-emerald-300">${stats.yIns} <small class="text-xs">件</small></span>
+                            </div>
+                        </div>
+
+                        <section class="bg-white p-6 rounded-[2.5rem] border border-stone-300 shadow-sm space-y-6">
+                            <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+                                <h3 class="font-black text-[#3E2723] uppercase tracking-tighter">診療所分佈 / Distribution</h3>
+                                <i data-lucide="activity" class="text-teal-600" size="18"></i>
+                            </div>
+                            <div class="space-y-5">
+                                ${stats.allShops.slice(0, 5).map(([name, count]) => {
+                                    const percent = (count / maxClinicCount) * 100;
+                                    return `
+                                    <div class="group">
+                                        <div class="flex justify-between text-[11px] font-black text-stone-600 mb-1.5 px-1 uppercase">
+                                            <span>${name}</span>
+                                            <span class="text-[#3E2723]">${count} 次 / Visits</span>
+                                        </div>
+                                        <div class="w-full bg-stone-100 h-4 rounded-full overflow-hidden border border-stone-200/50 p-0.5">
+                                            <div class="h-full bg-gradient-to-r from-[#3E2723] to-[#8D6E63] rounded-full transition-all duration-1000" style="width: ${percent}%"></div>
+                                        </div>
+                                    </div>`;
+                                }).join('')}
+                                ${stats.allShops.length === 0 ? '<p class="text-center py-4 opacity-30 italic">尚無數據</p>' : ''}
+                            </div>
+                        </section>
+
+                        <section class="bg-[#3E2723] p-8 rounded-[2.5rem] text-center shadow-2xl relative overflow-hidden">
+                             <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]"></div>
+                             <div class="relative z-10">
+                                <i data-lucide="award" class="text-yellow-400 mx-auto mb-3" size="32"></i>
+                                <p class="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-1">Clinic of the Year</p>
+                                <h3 class="text-3xl font-black text-white">${stats.topClinic}</h3>
+                             </div>
+                        </section>
+                    </div>
+                `;
+            }
+            initIcons();
+        }
+
+        // 修改與表單處理邏輯
+        function startEdit(index) {
+            editingIndex = index;
+            const data = records[index];
+            
+            // 載入所有歷史數據到臨時狀態
+            currentIce = data.ice;
+            currentSugar = data.sugar;
+            currentEco = data.eco;
+            currentIns = data.insurance;
+            
+            activeTab = 'prescribe';
+            render(); // 重新渲染後，Input 會因為 data 物件而填入 value
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingIndex = null;
+            // 回復預設狀態
+            currentIce = '微冰';
+            currentSugar = '微糖';
+            currentEco = false;
+            currentIns = false;
+            render();
+        }
+
+        function setOption(type, val) {
+            if(type === 'ice') currentIce = val;
+            if(type === 'sugar') currentSugar = val;
+            if(type === 'eco') currentEco = val;
+            if(type === 'ins') currentIns = val;
+            render();
+        }
+
+        function saveCurrentRecord() {
+            const shop = document.getElementById('input-shop').value;
+            const drink = document.getElementById('input-drink').value;
+            const cost = document.getElementById('input-cost').value || 0;
+            const date = document.getElementById('input-date').value;
+
+            if(!shop || !drink) { 
+                alert('臨床報告不完整：請填寫店名與藥劑名稱！'); 
+                return; 
+            }
+
+            const entry = { 
+                date, shop, drink, 
+                cost: parseInt(cost), 
+                ice: currentIce, 
+                sugar: currentSugar, 
+                eco: currentEco, 
+                insurance: currentIns 
+            };
+
+            if (editingIndex !== null) {
+                records[editingIndex] = entry;
+                editingIndex = null;
+            } else {
+                records.push(entry);
+                spawnParticles();
+            }
+
+            // 重置表單狀態
+            currentIce = '微冰'; 
+            currentSugar = '微糖'; 
+            currentEco = false; 
+            currentIns = false;
+            
+            saveRecords();
+            switchTab('history');
+        }
+
+        window.onload = () => render();
+    </script>
+</body>
+</html>
+
